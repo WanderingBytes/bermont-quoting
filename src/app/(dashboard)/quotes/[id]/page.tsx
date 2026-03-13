@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import { pdf } from '@react-pdf/renderer';
+import { QuotePDF } from '@/components/QuotePDF';
 
 interface Material {
   id: string;
@@ -252,8 +254,8 @@ export default function QuoteDetailPage() {
   };
 
   const handleSend = async () => {
-    if (!customerEmail) {
-      showToast('Customer email is required to send quote', 'error');
+    if (!customerName) {
+      showToast('Customer name is required to generate quote PDF', 'error');
       return;
     }
 
@@ -262,17 +264,43 @@ export default function QuoteDetailPage() {
 
     setSending(true);
     try {
+      // Generate PDF
+      const quoteDataForPdf = {
+        ...quote,
+        customerName,
+        customerCompany,
+        customerEmail,
+        customerPhone,
+        deliveryType,
+        deliveryAddress,
+        siteLocation,
+        subtotal,
+        deliveryFee,
+        taxAmount,
+        total,
+        lineItems
+      };
+      
+      const blob = await pdf(<QuotePDF quote={quoteDataForPdf} />).toBlob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Quote-${quote?.referenceNumber}.pdf`;
+      link.click();
+      URL.revokeObjectURL(url);
+
       const res = await fetch(`/api/quotes/${id}/send`, { method: 'POST' });
       const data = await res.json();
 
       if (res.ok) {
-        showToast(`Quote sent to ${data.sentTo}`, 'success');
+        showToast(`Quote PDF generated and marked as sent`, 'success');
         fetchQuote();
       } else {
-        showToast(data.error || 'Failed to send quote', 'error');
+        showToast(data.error || 'Failed to update quote status', 'error');
       }
-    } catch {
-      showToast('Failed to send quote', 'error');
+    } catch (err) {
+      console.error('PDF Generation error:', err);
+      showToast('Failed to generate quote PDF', 'error');
     } finally {
       setSending(false);
     }
@@ -322,8 +350,8 @@ export default function QuoteDetailPage() {
           <button onClick={handleSave} disabled={saving} className="btn btn-secondary">
             {saving ? '⏳ Saving...' : '💾 Save Draft'}
           </button>
-          <button onClick={handleSend} disabled={sending || !customerEmail} className="btn btn-success">
-            {sending ? '⏳ Sending...' : '📧 Send Quote'}
+          <button onClick={handleSend} disabled={sending || !customerName} className="btn btn-success">
+            {sending ? '⏳ Generating PDF...' : '⬇️ Download PDF Quote'}
           </button>
         </div>
       </div>
@@ -571,8 +599,8 @@ export default function QuoteDetailPage() {
               <button onClick={handleSave} disabled={saving} className="btn btn-secondary">
                 {saving ? '⏳ Saving...' : '💾 Save Draft'}
               </button>
-              <button onClick={handleSend} disabled={sending || !customerEmail} className="btn btn-success">
-                {sending ? '⏳ Sending...' : '📧 Send Quote'}
+              <button onClick={handleSend} disabled={sending || !customerName} className="btn btn-success">
+                {sending ? '⏳ Generating PDF...' : '⬇️ Download PDF Quote'}
               </button>
             </div>
           </div>
