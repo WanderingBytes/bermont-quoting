@@ -4,12 +4,12 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const navItems = [
+  { label: 'Dashboard', href: '/dashboard', icon: '📊' },
   { label: 'Quotes', href: '/quotes', icon: '📋' },
   { label: 'Materials', href: '/materials', icon: '🪨' },
 ];
 
 const placeholderItems = [
-  { label: 'Dashboard', href: '/dashboard', icon: '📊' },
   { label: 'Customers', href: '/customers', icon: '👥' },
   { label: 'Finance', href: '/finance', icon: '💰' },
   { label: 'Purchase Orders', href: '/po', icon: '📦' },
