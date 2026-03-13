@@ -280,7 +280,7 @@ export default function QuoteDetailPage() {
         total,
         lineItems
       };
-      
+
       const blob = await pdf(<QuotePDF quote={quoteDataForPdf} />).toBlob();
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
