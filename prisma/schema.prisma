@@ -1,0 +1,168 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================
+// MATERIALS CATALOG
+// ============================================
+
+model Material {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  pricePerTon Decimal  @db.Decimal(10, 2)
+  unit        String   @default("ton")
+  location    String   // "clarion", "alico", "both"
+  category    String?  // "fill", "base", "shell", "stone", "rip-rap"
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  quoteItems QuoteLineItem[]
+
+  @@map("materials")
+}
+
+// ============================================
+// QUOTE REQUESTS
+// ============================================
+
+model QuoteRequest {
+  id              String      @id @default(cuid())
+  referenceNumber String      @unique // "BM-2026-0001"
+  status          QuoteStatus @default(NEW)
+
+  // Customer info (OCR-extracted, editable)
+  customerName    String?
+  customerCompany String?
+  customerEmail   String?
+  customerPhone   String?
+
+  // Delivery info
+  deliveryType    String? // "pickup" or "delivery"
+  deliveryAddress String?
+  siteLocation    String? // "clarion" or "alico"
+  projectPurpose  String?
+  startDate       DateTime?
+
+  // Pricing (worker-set)
+  subtotal    Decimal?  @db.Decimal(10, 2)
+  deliveryFee Decimal?  @db.Decimal(10, 2)
+  taxRate     Decimal?  @db.Decimal(5, 4) // 0.0700
+  taxAmount   Decimal?  @db.Decimal(10, 2)
+  total       Decimal?  @db.Decimal(10, 2)
+  expiresAt   DateTime?
+
+  // OCR data
+  ocrData       Json?
+  ocrConfidence Float?
+
+  // Notes
+  internalNotes String?
+
+  // Timestamps
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  sentAt     DateTime?
+  acceptedAt DateTime?
+  declinedAt DateTime?
+
+  // Relations
+  lineItems   QuoteLineItem[]
+  email       QuoteEmail?
+  attachments QuoteAttachment[]
+  history     QuoteHistory[]
+
+  @@index([status])
+  @@map("quote_requests")
+}
+
+model QuoteLineItem {
+  id           String  @id @default(cuid())
+  quoteId      String
+  materialId   String?
+  materialName String
+  quantity     Decimal @db.Decimal(10, 2)
+  unit         String  @default("ton")
+  unitPrice    Decimal @db.Decimal(10, 2)
+  total        Decimal @db.Decimal(10, 2)
+
+  quote    QuoteRequest @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  material Material?    @relation(fields: [materialId], references: [id])
+
+  @@map("quote_line_items")
+}
+
+model QuoteEmail {
+  id         String    @id @default(cuid())
+  quoteId    String    @unique
+  subject    String?
+  fromEmail  String?
+  toEmail    String?
+  body       String?
+  receivedAt DateTime?
+  rawEmailId String?
+
+  quote QuoteRequest @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@map("quote_emails")
+}
+
+model QuoteAttachment {
+  id       String  @id @default(cuid())
+  quoteId  String
+  fileName String
+  fileType String
+  fileUrl  String
+  fileSize Int?
+  ocrText  String?
+
+  quote QuoteRequest @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@map("quote_attachments")
+}
+
+model QuoteHistory {
+  id        String   @id @default(cuid())
+  quoteId   String
+  action    String
+  details   Json?
+  createdAt DateTime @default(now())
+
+  quote QuoteRequest @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@index([quoteId])
+  @@map("quote_history")
+}
+
+enum QuoteStatus {
+  NEW
+  IN_REVIEW
+  PRICED
+  SENT
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
+// ============================================
+// AUTH
+// ============================================
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         String   @default("worker")
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("users")
+}
