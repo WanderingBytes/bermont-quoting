@@ -6,9 +6,13 @@ import pg from 'pg';
 const g = globalThis as any;
 
 function createPrismaClient() {
-  const connectionString = process.env.DATABASE_URL;
+  const connectionString = process.env.DATABASE_URL || 
+                           process.env.POSTGRES_PRISMA_URL || 
+                           process.env.bermont_quoting_POSTGRES_PRISMA_URL ||
+                           process.env.bermont_quoting_DATABASE_URL;
+
   if (!connectionString) {
-    throw new Error('DATABASE_URL environment variable is not set');
+    throw new Error('DATABASE_URL environment variable is not set correctly in production');
   }
 
   // Reuse existing pool if one exists from previous HMR cycles
