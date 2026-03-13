@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { processQuoteIntake } from '@/lib/intake';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST() {
   try {
     const result = await processQuoteIntake();

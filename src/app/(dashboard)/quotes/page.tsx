@@ -59,6 +59,7 @@ export default function QuotesPage() {
       if (search) params.set('search', search);
       params.set('sort', 'createdAt');
       params.set('order', 'desc');
+      params.set('_t', Date.now().toString()); // Cache buster
 
       const res = await fetch(`/api/quotes?${params.toString()}`);
       if (res.ok) {
